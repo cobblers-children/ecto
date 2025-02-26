@@ -726,6 +726,7 @@ defmodule Ecto.Integration.AssocTest do
   end
 
   test "inserting struct with associations" do
+    assert false == true
     tree = %Permalink{
       url: "root",
       post: %Post{
