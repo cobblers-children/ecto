@@ -169,9 +169,36 @@ defmodule Ecto.Repo.BelongsToTest do
       |> Ecto.Changeset.change
       |> Ecto.Changeset.put_assoc(:assoc, assoc)
     schema = TestRepo.insert!(changeset)
+
     assert schema.assoc.sub_assoc.id
     assert schema.assoc_id == schema.assoc.id
     assert schema.assoc.sub_assoc_id == schema.assoc.sub_assoc.id
+
+    # Just one transaction was used
+    assert_received {:transaction, _}
+    refute_received {:rollback, _}
+  end
+
+  test "nested associations can be retrieved" do
+    assoc =
+      %MyAssoc{x: "xyz"}
+      |> Ecto.Changeset.change
+      |> Ecto.Changeset.put_assoc(:sub_assoc, %SubAssoc{y: "xyz"})
+    changeset =
+      %MySchema{}
+      |> Ecto.Changeset.change
+      |> Ecto.Changeset.put_assoc(:assoc, assoc)
+    schema = TestRepo.insert!(changeset)
+
+    loaded = MySchema
+             |> TestRepo.get!(schema.id)
+             |> TestRepo.preload(:assoc)
+
+    assert loaded.assoc
+    assert loaded.assoc.sub_assoc
+    assert loaded.assoc.sub_assoc.id
+    assert loaded.assoc_id == loaded.assoc.id
+    assert loaded.assoc.sub_assoc_id == loaded.assoc.sub_assoc.id
 
     # Just one transaction was used
     assert_received {:transaction, _}
